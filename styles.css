@@ -1,0 +1,72 @@
+@import url("https://fonts.googleapis.com/css?family=Montserrat:300,400&display=swap");
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  font-family: "Montserrat", Arial, Helvetica, sans-serif;
+  font-weight: 300;
+}
+
+body {
+  background: #fafafa;
+}
+
+.container {
+  background: gainsboro;
+
+  position: relative;
+
+  max-width: 768px;
+  min-height: 100vh;
+  margin: auto;
+  padding: 1rem 1rem;
+}
+
+#carousel-root {
+  position: relative;
+  height: 100%;
+}
+
+#carousel-UI-left,
+#carousel-UI-right {
+  position: absolute;
+
+  width: 40px;
+  height: 40px;
+  background-color: gray;
+  border-radius: 50%;
+  opacity: 0;
+  top: calc(50% - 20px);
+  cursor: pointer;
+  transition: opacity 100ms;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#carousel-UI-left > i,
+#carousel-UI-right > i {
+  transform: scale(2);
+}
+
+#carousel-root:hover #carousel-UI-left,
+#carousel-root:hover #carousel-UI-right {
+  opacity: 0.7;
+  transition: opacity 200ms;
+}
+
+#carousel-UI-left {
+  left: 5px;
+  z-index: 998;
+}
+
+#carousel-UI-right {
+  right: 5px;
+  z-index: 999;
+}
