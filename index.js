@@ -58,6 +58,7 @@ const state = {
   max_offset: 1,
   animationId: null,
   drag_start_x: 0,
+  drag_lock: false,
   step: 0,
   full_item_width: 0,
   full_carousel_width: 0
@@ -97,7 +98,7 @@ const init = () => {
     carousel.appendChild(item.contianer_node);
   });
 
-  resize();
+  onResize();
 };
 
 const render = () => {
@@ -152,35 +153,7 @@ const onSlideRequest = left => event => {
   startTransition();
 };
 
-const onDragStart = event => {
-  state.drag_start_x = event.changedTouches[0].clientX;
-};
-
-const onDragEnd = event => {
-  if (
-    state.cur_loop ||
-    (!state.cur_loop && state.targ_offset > state.max_offset)
-  ) {
-    state.targ_offset = Math.round(state.targ_offset / state.step) * state.step;
-
-    startTransition();
-  }
-};
-
-const onDrag = event => {
-  event.preventDefault();
-
-  const cur_x = event.changedTouches[0].clientX;
-  const diff = cur_x - state.drag_start_x;
-
-  state.targ_offset += diff / state.full_carousel_width;
-
-  startTransition();
-
-  state.drag_start_x = cur_x;
-};
-
-const resize = () => {
+const onResize = () => {
   const viewport_width = carousel.getBoundingClientRect().width;
 
   state.full_item_width =
@@ -226,13 +199,60 @@ const resize = () => {
   render();
 };
 
+// UI Handlers
+
+const unifyEvents = e => {
+  return e.changedTouches ? e.changedTouches[0] : e;
+};
+
+const onDragStart = event => {
+  state.drag_lock = true;
+
+  state.drag_start_x = unifyEvents(event).clientX;
+};
+
+const onDragEnd = event => {
+  state.drag_lock = false;
+
+  if (
+    state.cur_loop ||
+    (!state.cur_loop && state.targ_offset > state.max_offset)
+  ) {
+    state.targ_offset = Math.round(state.targ_offset / state.step) * state.step;
+
+    startTransition();
+  }
+};
+
+const onDrag = event => {
+  event.preventDefault();
+
+  if (state.drag_lock) {
+    const cur_x = unifyEvents(event).clientX;
+    const diff = cur_x - state.drag_start_x;
+
+    state.targ_offset += diff / state.full_carousel_width;
+
+    startTransition();
+
+    state.drag_start_x = cur_x;
+  }
+};
+
 btn_left.addEventListener("click", onSlideRequest(true));
 btn_right.addEventListener("click", onSlideRequest(false));
 
 carousel.addEventListener("touchstart", onDragStart);
-carousel.addEventListener("touchmove", onDrag);
 carousel.addEventListener("touchend", onDragEnd);
+carousel.addEventListener("touchmove", onDrag);
 
-window.addEventListener("resize", resize);
+carousel.addEventListener("mousedown", onDragStart);
+carousel.addEventListener("mouseup", onDragEnd);
+carousel.addEventListener("mouseleave", onDragEnd);
+carousel.addEventListener("mousemove", onDrag);
+
+window.addEventListener("resize", onResize);
+
+//
 
 init();
