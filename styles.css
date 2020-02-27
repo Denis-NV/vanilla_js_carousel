@@ -21,19 +21,19 @@ body {
 
   position: relative;
 
-  max-width: 768px;
+  max-width: 600px;
   min-height: 100vh;
   margin: auto;
   padding: 1rem 1rem;
 }
 
-#carousel-root {
+.carousel-viewport {
   position: relative;
   height: 100%;
+  margin-bottom: 1rem;
 }
 
-#carousel-UI-left,
-#carousel-UI-right {
+.carousel-UI {
   position: absolute;
 
   width: 40px;
@@ -50,23 +50,21 @@ body {
   align-items: center;
 }
 
-#carousel-UI-left > i,
-#carousel-UI-right > i {
+.carousel-UI > i {
   transform: scale(2);
 }
 
-#carousel-root:hover #carousel-UI-left,
-#carousel-root:hover #carousel-UI-right {
+.carousel-viewport:hover .carousel-UI {
   opacity: 0.7;
   transition: opacity 200ms;
 }
 
-#carousel-UI-left {
+.carousel-UI-left {
   left: 5px;
   z-index: 998;
 }
 
-#carousel-UI-right {
+.carousel-UI-right {
   right: 5px;
   z-index: 999;
 }

@@ -1,0 +1,19 @@
+{
+  "name": "universal-carousel",
+  "version": "1.0.0",
+  "description": "Create slideshows of any custom DOM elements. Inline or full-screen. Full looping support",
+  "main": "main.js",
+  "repository": "https://github.com/Denis-NV/vanilla_js_carousel.git",
+  "author": "Denis Nemytov <denis@instruct-eric.eu>",
+  "license": "MIT",
+  "scripts": {
+    "test": "webpack --progress --watch",
+    "build": "webpack --progress --mode=production",
+    "server": "webpack-dev-server --open"
+  },
+  "devDependencies": {
+    "webpack": "^4.41.6",
+    "webpack-cli": "^3.3.11",
+    "webpack-dev-server": "^3.10.3"
+  }
+}
