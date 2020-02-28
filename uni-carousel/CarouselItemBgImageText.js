@@ -1,13 +1,15 @@
 import CarouselItemBase from "./CarouselItemBase";
 
 export default class extends CarouselItemBase {
-  constructor(image_url, p_text, p_image_width, p_image_height) {
+  constructor(image_url, p_text, p_item_width, p_image_height) {
     super();
 
     this.image_url = image_url;
     this.text = p_text;
-    this.image_width = p_image_width;
-    this.image_height = p_image_height;
+    this.item_width = p_item_width + Math.random() * 60 - 30;
+    this.image_height = p_image_height + Math.random() * 40 - 20;
+    // this.item_width = p_item_width;
+    // this.image_height = p_image_height;
     //
     this.init();
   }
@@ -18,7 +20,6 @@ export default class extends CarouselItemBase {
     this.text_node = document.createElement("p");
 
     this.container_node.style.position = "absolute";
-    this.container_node.style.width = "100%";
 
     this.image_node.style.backgroundImage = `url(${this.image_url})`;
     this.image_node.style.backgroundPosition = "center center";
@@ -36,9 +37,17 @@ export default class extends CarouselItemBase {
     return this.container_node;
   }
 
-  resize(p_width, p_fullwidth) {
+  get width() {
+    return this.container_node.getBoundingClientRect().width;
+  }
+
+  resize(p_viewport_width, p_fullwidth) {
+    this.container_node.style.width = `${
+      p_fullwidth ? p_viewport_width : this.item_width
+    }px`;
+
     this.image_node.style.height = p_fullwidth
-      ? `${p_width * (this.image_height / this.image_width)}px`
+      ? `${p_viewport_width * (this.image_height / this.item_width)}px`
       : `${this.image_height}px`;
 
     return this.container_node.getBoundingClientRect().height;

@@ -12,14 +12,12 @@ export default class {
     this.btn_right = p_btn_right;
 
     this.settings = {
-      ...{
-        full_width: true,
-        swipe: true,
-        item_width: 192,
-        gap: 16,
-        easing_factor: 0.15,
-        loop: true
-      },
+      full_width: true,
+      swipe: true,
+      gap: 16,
+      easing_factor: 0.15,
+      easing_tolerance: 0.0001,
+      loop: true,
       ...p_settings
     };
 
@@ -33,7 +31,6 @@ export default class {
       drag_start_x: 0,
       drag_lock: false,
       step: 0,
-      full_item_width: 0,
       full_carousel_width: 0
     };
 
@@ -63,16 +60,15 @@ export default class {
       });
 
     if (this.settings.swipe) {
-      this.carousel.addEventListener("touchstart", function(event) {
-        scope.onDragStart(event);
-      });
-      this.carousel.addEventListener("touchend", function(event) {
-        scope.onDragEnd(event);
-      });
-      this.carousel.addEventListener("touchmove", function(event) {
-        scope.onDrag(event);
-      });
-
+      // this.carousel.addEventListener("touchstart", function(event) {
+      //   scope.onDragStart(event);
+      // });
+      // this.carousel.addEventListener("touchend", function(event) {
+      //   scope.onDragEnd(event);
+      // });
+      // this.carousel.addEventListener("touchmove", function(event) {
+      //   scope.onDrag(event);
+      // });
       this.carousel.addEventListener("mousedown", function(event) {
         scope.onDragStart(event);
       });
@@ -104,14 +100,18 @@ export default class {
     const cut_off = this.carousel.getBoundingClientRect().width;
     const cut_off_tail = this.state.full_carousel_width - cut_off;
 
-    this.items.forEach((item, index) => {
-      const static_x = index * this.state.full_item_width;
+    let static_x = 0;
+
+    this.items.forEach(item => {
       const offset_x = this.state.full_carousel_width * this.state.cur_phase;
       const prov_x = static_x + offset_x;
       const run_over_x = prov_x - cut_off;
       const final_x = prov_x > cut_off ? run_over_x - cut_off_tail : prov_x;
 
+      item.x = final_x;
       item.container.style.transform = `translateX(${final_x}px)`;
+
+      static_x += item.width + this.settings.gap;
     });
   }
 
@@ -129,7 +129,10 @@ export default class {
 
       this.state.cur_offset += eased_remaining_offset;
 
-      if (Math.abs(this.state.targ_offset - this.state.cur_offset) < 0.0001)
+      if (
+        Math.abs(this.state.targ_offset - this.state.cur_offset) <
+        this.settings.easing_tolerance
+      )
         this.state.cur_offset = this.state.targ_offset;
 
       this.state.cur_phase = this.state.cur_offset % 1;
@@ -150,44 +153,54 @@ export default class {
 
   // Handlers
   onSlideRequest(left) {
-    this.state.targ_offset += this.state.step * (left ? 1 : -1);
+    let left_index = 0;
+    let closest_gap = this.state.full_carousel_width;
+
+    this.items.forEach((item, index) => {
+      if (Math.abs(item.x) < closest_gap) {
+        closest_gap = Math.abs(item.x);
+
+        left_index = index;
+      }
+    });
+
+    const step_index = left
+      ? (this.items.length + left_index - 1) % this.items.length
+      : left_index;
+    const step =
+      (this.items[step_index].width + this.settings.gap) /
+      this.state.full_carousel_width;
+
+    // TODO: Swicth to steps, based on next items width
+    // this.state.targ_offset += this.state.step * (left ? 1 : -1);
+    this.state.targ_offset += step * (left ? 1 : -1);
 
     this.startTransition();
   }
 
   onResize() {
     const viewport_width = this.carousel.getBoundingClientRect().width;
-
-    this.state.full_item_width =
-      this.settings.gap +
-      (this.settings.full_width ? viewport_width : this.settings.item_width);
-
-    this.state.full_carousel_width =
-      this.state.full_item_width * this.items.length;
-
-    //
+    const last_item_width = this.items[this.items.length - 1].width;
 
     let max_height = 0;
 
-    this.items.forEach(item => {
-      item.container.style.width = this.settings.full_width
-        ? "100%"
-        : `${this.settings.item_width}px`;
+    this.state.full_carousel_width = 0;
 
+    this.items.forEach(item => {
       max_height = Math.max(
         max_height,
         item.resize(viewport_width, this.settings.full_width)
       );
+
+      this.state.full_carousel_width += item.width + this.settings.gap;
     });
 
     this.carousel.style.height = `${max_height}px`;
 
-    //
-
     this.state.cur_loop =
       this.settings.loop &&
-      this.state.full_carousel_width - this.state.full_item_width >
-        viewport_width;
+      this.state.full_carousel_width - last_item_width > viewport_width;
+
     this.state.max_offset =
       (viewport_width - this.state.full_carousel_width + this.settings.gap) /
       this.state.full_carousel_width;
@@ -213,16 +226,69 @@ export default class {
   }
 
   onDragEnd(event) {
-    this.state.drag_lock = false;
+    if (this.state.drag_lock) {
+      this.state.drag_lock = false;
 
-    if (
-      this.state.cur_loop ||
-      (!this.state.cur_loop && this.state.targ_offset > this.state.max_offset)
-    ) {
-      this.state.targ_offset =
-        Math.round(this.state.targ_offset / this.state.step) * this.state.step;
+      if (
+        this.state.cur_loop ||
+        (!this.state.cur_loop && this.state.targ_offset > this.state.max_offset)
+      ) {
+        let static_x = 0;
+        let closest_snap_offset = 0;
+        let closest_ind = 0;
+        let offset_diff = 1;
 
-      this.startTransition();
+        const norm_target_offset = this.state.targ_offset % 1;
+
+        this.items.forEach((item, index) => {
+          // const norm_target_offset = Math.abs(this.state.targ_offset) % 1;
+          const items_snap_offset = static_x / this.state.full_carousel_width;
+          const items_offset_diff = Math.abs(
+            items_snap_offset - norm_target_offset
+          );
+          console.log(
+            index + 1,
+            norm_target_offset,
+            items_snap_offset,
+            "diff:",
+            items_offset_diff
+          );
+
+          if (items_offset_diff < offset_diff) {
+            offset_diff = items_offset_diff;
+            closest_snap_offset = items_snap_offset;
+            closest_ind = index;
+          }
+
+          static_x += item.width + this.settings.gap;
+        });
+        console.log(
+          "closest",
+          closest_ind + 1,
+          offset_diff,
+          "snap",
+          closest_snap_offset,
+          "targ",
+          this.state.targ_offset
+        );
+
+        // TODO: Replace with snapping to various width items logic
+        this.state.targ_offset =
+          Math.round(this.state.targ_offset / this.state.step) *
+          this.state.step;
+
+        // if (this.state.targ_offset !== 0) {
+        //   const new_targ_offset =
+        //     Math.ceil(closest_snap_offset / this.state.targ_offset) *
+        //     closest_snap_offset;
+
+        //   console.log(new_targ_offset);
+
+        //   this.state.targ_offset = new_targ_offset;
+        // }
+
+        this.startTransition();
+      }
     }
   }
 
@@ -234,7 +300,9 @@ export default class {
       const diff = cur_x - this.state.drag_start_x;
 
       this.state.targ_offset += diff / this.state.full_carousel_width;
+
       this.startTransition();
+
       this.state.drag_start_x = cur_x;
     }
   }
