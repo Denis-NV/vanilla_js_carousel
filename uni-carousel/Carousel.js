@@ -233,58 +233,15 @@ export default class {
         this.state.cur_loop ||
         (!this.state.cur_loop && this.state.targ_offset > this.state.max_offset)
       ) {
-        let static_x = 0;
-        let closest_snap_offset = 0;
-        let closest_ind = 0;
-        let offset_diff = 1;
-
-        const norm_target_offset = this.state.targ_offset % 1;
-
-        this.items.forEach((item, index) => {
-          // const norm_target_offset = Math.abs(this.state.targ_offset) % 1;
-          const items_snap_offset = static_x / this.state.full_carousel_width;
-          const items_offset_diff = Math.abs(
-            items_snap_offset - norm_target_offset
-          );
-          console.log(
-            index + 1,
-            norm_target_offset,
-            items_snap_offset,
-            "diff:",
-            items_offset_diff
-          );
-
-          if (items_offset_diff < offset_diff) {
-            offset_diff = items_offset_diff;
-            closest_snap_offset = items_snap_offset;
-            closest_ind = index;
-          }
-
-          static_x += item.width + this.settings.gap;
-        });
-        console.log(
-          "closest",
-          closest_ind + 1,
-          offset_diff,
-          "snap",
-          closest_snap_offset,
-          "targ",
-          this.state.targ_offset
-        );
-
         // TODO: Replace with snapping to various width items logic
         this.state.targ_offset =
           Math.round(this.state.targ_offset / this.state.step) *
           this.state.step;
 
         // if (this.state.targ_offset !== 0) {
-        //   const new_targ_offset =
-        //     Math.ceil(closest_snap_offset / this.state.targ_offset) *
-        //     closest_snap_offset;
+        //   this.state.targ_offset = this.getSnapTragetOffset();
 
-        //   console.log(new_targ_offset);
-
-        //   this.state.targ_offset = new_targ_offset;
+        //   console.log("New targ offset", this.state.targ_offset);
         // }
 
         this.startTransition();
@@ -311,5 +268,52 @@ export default class {
 
   unifyEvents(e) {
     return e.changedTouches ? e.changedTouches[0] : e;
+  }
+
+  getSnapTragetOffset() {
+    let static_x = 0;
+    let closest_snap_offset = 0;
+    let closest_ind = 0;
+    let offset_diff = 1;
+
+    const norm_target_offset = (1 - (this.state.targ_offset % 1)) % 1;
+
+    this.items.forEach((item, index) => {
+      const items_snap_offset = static_x / this.state.full_carousel_width;
+      const items_offset_diff = Math.abs(
+        items_snap_offset - norm_target_offset
+      );
+      console.log(
+        index + 1,
+        "targ",
+        norm_target_offset,
+        "snap",
+        items_snap_offset,
+        "diff:",
+        items_offset_diff
+      );
+
+      if (items_offset_diff < offset_diff) {
+        offset_diff = items_offset_diff;
+        closest_snap_offset = items_snap_offset;
+        closest_ind = index;
+      }
+
+      static_x += item.width + this.settings.gap;
+    });
+    console.log(
+      "closest",
+      closest_ind + 1,
+      offset_diff,
+      "snap",
+      closest_snap_offset,
+      "targ",
+      this.state.targ_offset
+    );
+
+    return (
+      Math.ceil(closest_snap_offset / this.state.targ_offset) *
+      closest_snap_offset
+    );
   }
 }
