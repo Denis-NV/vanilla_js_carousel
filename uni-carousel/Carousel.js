@@ -60,15 +60,15 @@ export default class {
       });
 
     if (this.settings.swipe) {
-      // this.carousel.addEventListener("touchstart", function(event) {
-      //   scope.onDragStart(event);
-      // });
-      // this.carousel.addEventListener("touchend", function(event) {
-      //   scope.onDragEnd(event);
-      // });
-      // this.carousel.addEventListener("touchmove", function(event) {
-      //   scope.onDrag(event);
-      // });
+      this.carousel.addEventListener("touchstart", function(event) {
+        scope.onDragStart(event);
+      });
+      this.carousel.addEventListener("touchend", function(event) {
+        scope.onDragEnd(event);
+      });
+      this.carousel.addEventListener("touchmove", function(event) {
+        scope.onDrag(event);
+      });
       this.carousel.addEventListener("mousedown", function(event) {
         scope.onDragStart(event);
       });
@@ -234,15 +234,17 @@ export default class {
         (!this.state.cur_loop && this.state.targ_offset > this.state.max_offset)
       ) {
         // TODO: Replace with snapping to various width items logic
-        this.state.targ_offset =
-          Math.round(this.state.targ_offset / this.state.step) *
-          this.state.step;
+        // this.state.targ_offset =
+        //   Math.round(this.state.targ_offset / this.state.step) *
+        //   this.state.step;
 
-        // if (this.state.targ_offset !== 0) {
-        //   this.state.targ_offset = this.getSnapTragetOffset();
+        this.state.targ_offset = this.getSnapTragetOffset(
+          this.state.targ_offset,
+          this.items,
+          this.state.full_carousel_width
+        );
 
-        //   console.log("New targ offset", this.state.targ_offset);
-        // }
+        console.log("New targ offset", this.state.targ_offset);
 
         this.startTransition();
       }
@@ -270,50 +272,65 @@ export default class {
     return e.changedTouches ? e.changedTouches[0] : e;
   }
 
-  getSnapTragetOffset() {
-    let static_x = 0;
-    let closest_snap_offset = 0;
-    let closest_ind = 0;
-    let offset_diff = 1;
+  getSnapTragetOffset(p_targ_offset, p_items, p_full_carousel_width) {
+    if (p_targ_offset !== 0) {
+      let static_x = 0;
+      let closest_snap_offset = 0;
+      let closest_ind = 0;
+      let offset_diff_mod = 2;
+      let offset_diff = 2;
 
-    const norm_target_offset = (1 - (this.state.targ_offset % 1)) % 1;
+      const norm_target_offset = p_targ_offset % 1;
 
-    this.items.forEach((item, index) => {
-      const items_snap_offset = static_x / this.state.full_carousel_width;
-      const items_offset_diff = Math.abs(
-        items_snap_offset - norm_target_offset
-      );
-      console.log(
-        index + 1,
-        "targ",
-        norm_target_offset,
-        "snap",
-        items_snap_offset,
-        "diff:",
-        items_offset_diff
-      );
+      console.log("norm_targ", norm_target_offset);
 
-      if (items_offset_diff < offset_diff) {
-        offset_diff = items_offset_diff;
-        closest_snap_offset = items_snap_offset;
-        closest_ind = index;
+      for (let i = 0; i < p_items.length * 2 + 1; i++) {
+        const index = i % p_items.length;
+        const item = p_items[index];
+
+        const items_snap_offset = static_x / p_full_carousel_width - 1;
+        const items_offset_diff = Math.abs(
+          norm_target_offset + items_snap_offset
+        );
+
+        console.log(
+          index + 1,
+          "snap",
+          items_snap_offset,
+          "diff:",
+          items_offset_diff
+        );
+
+        if (items_offset_diff < offset_diff_mod) {
+          offset_diff = norm_target_offset + items_snap_offset;
+          offset_diff_mod = items_offset_diff;
+          closest_snap_offset = items_snap_offset;
+          closest_ind = index;
+        }
+
+        if (item) static_x += item.width + this.settings.gap;
       }
 
-      static_x += item.width + this.settings.gap;
-    });
-    console.log(
-      "closest",
-      closest_ind + 1,
-      offset_diff,
-      "snap",
-      closest_snap_offset,
-      "targ",
-      this.state.targ_offset
-    );
+      console.log(
+        "closest",
+        closest_ind + 1,
+        "diff",
+        offset_diff_mod,
+        "targ",
+        p_targ_offset,
+        "snap",
+        closest_snap_offset
+      );
 
-    return (
-      Math.ceil(closest_snap_offset / this.state.targ_offset) *
-      closest_snap_offset
-    );
+      // console.log(Math.floor(Math.abs(p_targ_offset / 1)));
+      console.log(p_targ_offset - offset_diff);
+
+      // return (
+      //   Math.ceil(closest_snap_offset / p_targ_offset) * closest_snap_offset
+      // );
+
+      return p_targ_offset - offset_diff;
+    }
+    return p_targ_offset;
   }
 }
