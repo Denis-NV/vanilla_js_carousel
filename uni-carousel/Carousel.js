@@ -30,7 +30,6 @@ export default class {
       animationId: null,
       drag_start_x: 0,
       drag_lock: false,
-      step: 0,
       full_carousel_width: 0
     };
 
@@ -42,8 +41,6 @@ export default class {
 
     this.carousel = document.createElement("div");
     this.container.appendChild(this.carousel);
-
-    this.state.step = 1 / this.items.length;
 
     this.carousel.style.boxSizing = "border-box";
     this.carousel.style.width = "100%";
@@ -153,27 +150,12 @@ export default class {
 
   // Handlers
   onSlideRequest(left) {
-    let left_index = 0;
-    let closest_gap = this.state.full_carousel_width;
-
-    this.items.forEach((item, index) => {
-      if (Math.abs(item.x) < closest_gap) {
-        closest_gap = Math.abs(item.x);
-
-        left_index = index;
-      }
-    });
-
-    const step_index = left
-      ? (this.items.length + left_index - 1) % this.items.length
-      : left_index;
-    const step =
-      (this.items[step_index].width + this.settings.gap) /
-      this.state.full_carousel_width;
-
-    // TODO: Swicth to steps, based on next items width
-    // this.state.targ_offset += this.state.step * (left ? 1 : -1);
-    this.state.targ_offset += step * (left ? 1 : -1);
+    this.state.targ_offset += this.getOffsetStep(
+      left,
+      this.items,
+      this.state.full_carousel_width,
+      this.settings.gap
+    );
 
     this.startTransition();
   }
@@ -233,18 +215,12 @@ export default class {
         this.state.cur_loop ||
         (!this.state.cur_loop && this.state.targ_offset > this.state.max_offset)
       ) {
-        // TODO: Replace with snapping to various width items logic
-        // this.state.targ_offset =
-        //   Math.round(this.state.targ_offset / this.state.step) *
-        //   this.state.step;
-
         this.state.targ_offset = this.getSnapTragetOffset(
           this.state.targ_offset,
           this.items,
-          this.state.full_carousel_width
+          this.state.full_carousel_width,
+          this.settings.gap
         );
-
-        console.log("New targ offset", this.state.targ_offset);
 
         this.startTransition();
       }
@@ -272,17 +248,33 @@ export default class {
     return e.changedTouches ? e.changedTouches[0] : e;
   }
 
-  getSnapTragetOffset(p_targ_offset, p_items, p_full_carousel_width) {
+  getOffsetStep(p_left, p_items, p_full_carousel_width, p_gap) {
+    let left_index = 0;
+    let closest_gap = p_full_carousel_width;
+
+    p_items.forEach((item, index) => {
+      if (Math.abs(item.x) < closest_gap) {
+        closest_gap = Math.abs(item.x);
+
+        left_index = index;
+      }
+    });
+
+    const step_index = p_left
+      ? (p_items.length + left_index - 1) % p_items.length
+      : left_index;
+    const step = (p_items[step_index].width + p_gap) / p_full_carousel_width;
+
+    return step * (p_left ? 1 : -1);
+  }
+
+  getSnapTragetOffset(p_targ_offset, p_items, p_full_carousel_width, p_gap) {
     if (p_targ_offset !== 0) {
       let static_x = 0;
-      let closest_snap_offset = 0;
-      let closest_ind = 0;
       let offset_diff_mod = 2;
       let offset_diff = 2;
 
       const norm_target_offset = p_targ_offset % 1;
-
-      console.log("norm_targ", norm_target_offset);
 
       for (let i = 0; i < p_items.length * 2 + 1; i++) {
         const index = i % p_items.length;
@@ -293,44 +285,17 @@ export default class {
           norm_target_offset + items_snap_offset
         );
 
-        console.log(
-          index + 1,
-          "snap",
-          items_snap_offset,
-          "diff:",
-          items_offset_diff
-        );
-
         if (items_offset_diff < offset_diff_mod) {
           offset_diff = norm_target_offset + items_snap_offset;
           offset_diff_mod = items_offset_diff;
-          closest_snap_offset = items_snap_offset;
-          closest_ind = index;
         }
 
-        if (item) static_x += item.width + this.settings.gap;
+        static_x += item.width + p_gap;
       }
-
-      console.log(
-        "closest",
-        closest_ind + 1,
-        "diff",
-        offset_diff_mod,
-        "targ",
-        p_targ_offset,
-        "snap",
-        closest_snap_offset
-      );
-
-      // console.log(Math.floor(Math.abs(p_targ_offset / 1)));
-      console.log(p_targ_offset - offset_diff);
-
-      // return (
-      //   Math.ceil(closest_snap_offset / p_targ_offset) * closest_snap_offset
-      // );
 
       return p_targ_offset - offset_diff;
     }
+
     return p_targ_offset;
   }
 }
