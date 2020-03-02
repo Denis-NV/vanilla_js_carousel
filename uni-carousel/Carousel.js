@@ -85,8 +85,6 @@ export default class {
     });
 
     this.items.forEach(item => {
-      // TODO: Perhaps outsource child appending logic to render function?
-
       this.carousel.appendChild(item.container);
     });
 
@@ -99,7 +97,7 @@ export default class {
 
     let static_x = 0;
 
-    this.items.forEach(item => {
+    this.items.forEach((item, index) => {
       const offset_x = this.state.full_carousel_width * this.state.cur_phase;
       const prov_x = static_x + offset_x;
       const run_over_x = prov_x - cut_off;
@@ -107,6 +105,15 @@ export default class {
 
       item.x = final_x;
       item.container.style.transform = `translateX(${final_x}px)`;
+
+      if (
+        item.x <= cut_off &&
+        item.x + item.width + this.settings.gap >= 0 &&
+        !item.initialized
+      ) {
+        item.initialize();
+        item.load();
+      }
 
       static_x += item.width + this.settings.gap;
     });

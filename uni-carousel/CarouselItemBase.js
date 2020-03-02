@@ -1,7 +1,7 @@
 export default class {
   constructor() {
-    //
     this.transform_x = 0;
+    this.is_initialized = false;
   }
 
   get container() {
@@ -25,6 +25,12 @@ export default class {
     return this.container.getBoundingClientRect().height;
   }
 
+  load() {
+    console.warn(
+      "WARNING!!! 'load()' method of the CarouselItemBase Class should be overriden. This is a good place to load images or other assest"
+    );
+  }
+
   //
 
   get x() {
@@ -33,5 +39,13 @@ export default class {
 
   set x(p_x) {
     this.transform_x = p_x;
+  }
+
+  get initialized() {
+    return this.is_initialized;
+  }
+
+  initialize() {
+    this.is_initialized = true;
   }
 }

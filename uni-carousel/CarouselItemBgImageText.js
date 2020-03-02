@@ -21,7 +21,9 @@ export default class extends CarouselItemBase {
 
     this.container_node.style.position = "absolute";
 
-    this.image_node.style.backgroundImage = `url(${this.image_url})`;
+    // this.image_node.style.backgroundImage = `url(${this.image_url})`;
+    this.image_node.style.backgroundImage =
+      "linear-gradient(135deg, rgb(115, 115, 115) 45%, rgb(156, 156, 156))";
     this.image_node.style.backgroundPosition = "center center";
     this.image_node.style.backgroundSize = "cover";
     this.image_node.style.width = "100%";
@@ -31,6 +33,10 @@ export default class extends CarouselItemBase {
 
     this.container_node.appendChild(this.image_node);
     this.container_node.appendChild(this.text_node);
+  }
+
+  load() {
+    this.image_node.style.backgroundImage = `url(${this.image_url})`;
   }
 
   get container() {
